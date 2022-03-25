@@ -1,4 +1,5 @@
 import gym
+import jbw # Added DRP
 
 import argparse
 import importlib
@@ -35,7 +36,7 @@ def evaluate_agent(agent, env, n_episodes_to_evaluate):
 def get_environment(env_type):
   '''Generates an environment specific to the agent type.'''
   if 'jellybean' in env_type:
-    env = JellyBeanEnv(gym.make('Hopper-v2'))
+    env = JellyBeanEnv(gym.make("JBW-COMP579-obj-v1")) # Changed DRP
   elif 'mujoco' in env_type:
     env = MujocoEnv(gym.make('Hopper-v2'))
   else:
@@ -73,6 +74,7 @@ def train_agent(agent,
         mean_acc_rewards = evaluate_agent(agent, env, n_episodes_to_evaluate)
         print('timestep: {ts}, acc_reward: {acr:.2f}'.format(ts=timestep, acr=mean_acc_rewards))
         array_of_mean_acc_rewards.append(mean_acc_rewards)
+        env.reset() # Added DRP
 
   return array_of_mean_acc_rewards
 
@@ -105,4 +107,4 @@ if __name__ == '__main__':
   n_episodes_to_evaluate = 20
 
   learning_curve = train_agent(agent, env, total_timesteps, evaluation_freq, n_episodes_to_evaluate)
-
+  
