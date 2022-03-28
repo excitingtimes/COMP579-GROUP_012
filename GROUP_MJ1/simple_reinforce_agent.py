@@ -18,10 +18,11 @@ class Agent():
     self.env_specs = env_specs
     self.model = ReinforceViz()
     self.loss=0
-    self.optim = Adam(self.model.parameters(),lr=0.1)
+    self.optim = Adam(self.model.parameters(),lr=0.001)
     self.action=self.env_specs['action_space'].sample()
     self.gt=0
     self.gam= 0.1
+    self.add_scent=True
 
   def load_weights(self):
     pass
@@ -37,25 +38,35 @@ class Agent():
 
   def update(self, curr_obs, action, reward, next_obs, done, timestep):
     
+    
     if curr_obs is not None:
-      
       #update model 
       self.model.zero_grad()
-      self.gt= self.gt + self.gam*reward
+      
       _ , log_prob= self.model(Tensor(curr_obs[1]).permute(2, 0, 1)[None , ...])
-
+      
+      #weight reward with scent
+      reward= reward +  scent_from_fruits(next_obs[0])-scent_from_fruits(curr_obs[0]) if self.add_scent else reward
+            
+      self.gt= self.gt + self.gam*reward
       loss = (- self.gam ** timestep * self.gt * log_prob.squeeze(0)[action] )
       loss.backward()
       self.optim.step()
 
       #next action 
       next_action , _ =self.model(Tensor(next_obs[1]).permute(2, 0, 1)[None , ...])
-      print(next_action)
       self.action = np.random.choice([0,1,2,3], p=next_action.squeeze(0).detach().numpy())
-      
-      print(self.action)
-      print(next_action)
+  
+def nom_eucl(a,b):
+  return np.linalg.norm(a/np.linalg.norm(a)- b/np.linalg.norm(b))
 
+def scent_from_fruits(x):
+  apple = np.array([1.64, 0.54, 0.4])
+  banana = np.array([1.92, 1.76, 0.4])
+  jelly = np.array([0.68, 0.01, 0.99])
+  truffle = np.array([8.4, 4.8, 2.6])
+
+  return nom_eucl(x, apple) + 0.1 * nom_eucl(x, banana) - nom_eucl(x, jelly) - nom_eucl(x,truffle)
 
 class ReinforceViz(nn.Module):
     def __init__(self):
