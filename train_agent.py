@@ -1,4 +1,5 @@
 import gym
+import jbw
 
 import argparse
 import importlib
@@ -35,7 +36,7 @@ def evaluate_agent(agent, env, n_episodes_to_evaluate):
 def get_environment(env_type):
   '''Generates an environment specific to the agent type.'''
   if 'jellybean' in env_type:
-    env = JellyBeanEnv(gym.make('Hopper-v2'))
+    env = JellyBeanEnv(gym.make('JBW-COMP579-obj-v1'))
   elif 'mujoco' in env_type:
     env = MujocoEnv(gym.make('Hopper-v2'))
   else:
@@ -80,7 +81,7 @@ def train_agent(agent,
 if __name__ == '__main__':
     
   parser = argparse.ArgumentParser(description='')
-  parser.add_argument('--group', type=str, default='GROUP1', help='group directory')
+  parser.add_argument('--group', type=str, default='GROUP_MJ1', help='group directory')
   args = parser.parse_args()
 
   path = './'+args.group+'/'
