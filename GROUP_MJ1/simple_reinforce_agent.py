@@ -57,7 +57,7 @@ class Agent():
       
       #evaluating model 
       if(timestep % self.batch_size == 0 or done ):
-        # stores observed g_t after eat step t
+        # stores observed g_t after each step t
         cum_rewards=[] 
         for t in range(len(self.R)):
           gt=0
