@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.distributions.normal import Normal
 from torch.distributions.categorical import Categorical
 from torch.optim import Adam
-from torch import Tensor
+import torch
+
 class Agent():
   '''The agent class that is to be filled.
      You are allowed to add any method you
@@ -16,13 +17,18 @@ class Agent():
 
   def __init__(self, env_specs):
     self.env_specs = env_specs
-    self.model = ReinforceViz()
-    self.loss=0
+    #model parameters
+    self.device='cpu'
+    self.model = ReinforceViz().to(self.device)
     self.optim = Adam(self.model.parameters(),lr=0.001)
     self.action=self.env_specs['action_space'].sample()
-    self.gt=0
+    
+    # approach parameters 
+    self.batch_size=5
+    self.R= []
+    self.prob_a= []
     self.gam= 0.1
-    self.add_scent=True
+
 
   def load_weights(self):
     pass
@@ -38,24 +44,43 @@ class Agent():
 
   def update(self, curr_obs, action, reward, next_obs, done, timestep):
     
-    
     if curr_obs is not None:
-      #update model 
-      self.model.zero_grad()
-      
-      _ , log_prob= self.model(Tensor(curr_obs[1]).permute(2, 0, 1)[None , ...])
-      
-      #weight reward with scent
-      reward= reward +  scent_from_fruits(next_obs[0])-scent_from_fruits(curr_obs[0]) if self.add_scent else reward
-            
-      self.gt= self.gt + self.gam*reward
-      loss = (- self.gam ** timestep * self.gt * log_prob.squeeze(0)[action] )
-      loss.backward()
-      self.optim.step()
+      # store reward
+      self.R.append(reward)
 
-      #next action 
-      next_action , _ =self.model(Tensor(next_obs[1]).permute(2, 0, 1)[None , ...])
-      self.action = np.random.choice([0,1,2,3], p=next_action.squeeze(0).detach().numpy())
+      # generate next action 
+      if(not done):
+        next_action , next_act_prob =self.model(torch.tensor(next_obs[1]).permute(2, 0, 1)[None , ...])
+        self.action = np.random.choice([0,1,2,3], p=next_action.squeeze(0).detach().cpu().numpy())
+        
+        self.prob_a.append(next_act_prob.squeeze(0)[action] )
+      
+      #evaluating model 
+      if(timestep % self.batch_size == 0 or done ):
+        # stores observed g_t after eat step t
+        cum_rewards=[] 
+        for t in range(len(self.R)):
+          gt=0
+          exp_gam= 0
+          # calculate cum rewards after step t 
+          for reward in self.R[t:]:
+            gt += reward * self.gam**exp_gam
+            exp_gam +=1
+          cum_rewards.append(gt)
+        
+        #pred gts to be used in model 
+        G_ts = torch.tensor(cum_rewards).to(self.device)
+        log_probs= torch.stack(self.prob_a).to(self.device)
+        
+        #update model 
+        self.model.zero_grad()
+        policy_grad = -log_probs*G_ts
+        policy_grad.sum().backward()
+        self.optim.step()
+        self.prob_a= []
+        self.R=[]
+
+      
   
 def nom_eucl(a,b):
   return np.linalg.norm(a/np.linalg.norm(a)- b/np.linalg.norm(b))
