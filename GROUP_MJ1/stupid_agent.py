@@ -23,8 +23,8 @@ blue -1
     0: forward
     1: left
     2: right
-    3: stay still -> should be ignored'''
-    
+    3: stay still -> should be ignored''' 
+
     if self.target['set']:
       if(len(self.target['actions'])>0):
         action = self.target['actions'][0]
@@ -50,24 +50,7 @@ blue -1
       down= 7-max_reward[1]
       up= max_reward[1] -7 
       
-      actions = []
-      if(left >=0 ):
-        actions += [1 ]+ [0 for _ in range(left)] if left>0 else []
-        
-        if(up>0):
-          actions+= [2]+ [0 for _ in range(up)]
-          
-        elif (down>0):
-          actions+=[1]+ [0 for _ in range(down)]
-          
-      elif (right>0):
-        actions += [2 ]+ [0 for _ in range(right)]
-        
-        if(up>0):
-          actions+= [1]+ [0 for _ in range(up)]
-          
-        elif (down>0):
-          actions+=[2]+ [0 for _ in range(down)]
+      actions =  [0 for _ in range(up)] +[1 for _ in range(left)] +  [2 for _ in range(right)] + [3 for _ in range(down)]
         
       self.target['actions'] = actions
       self.target['set']= True
