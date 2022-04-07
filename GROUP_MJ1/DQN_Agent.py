@@ -3,7 +3,6 @@ import torch
 from torch import nn
 from collections import deque, namedtuple
 import random
-from torch.utils.data import TensorDataset, DataLoader
 
 class Agent():
     def __init__(self, env_specs):
