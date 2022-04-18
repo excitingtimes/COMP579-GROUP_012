@@ -1,0 +1,15 @@
+GPU available: True, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Traceback (most recent call last):
+  File "train.py", line 334, in <module>
+    main(args)
+  File "train.py", line 294, in main
+    model = model_class(num_stack=num_stack)
+NameError: name 'num_stack' is not defined
+Traceback (most recent call last):
+  File "train.py", line 334, in <module>
+    main(args)
+  File "train.py", line 294, in main
+    model = model_class(num_stack=num_stack)

@@ -5,7 +5,7 @@ Create a virtual environment with the dependencies found in `environment.yml`.
 ```
 git clone https://github.com/COMP579TA/COMP579-Project-Template
 cd COMP579-Project-Template
-conda env create environment.yml -n my-venv
+conda env create environment.yml -n geoenv
 conda activate my-venv
 ```
 ## Training the agent

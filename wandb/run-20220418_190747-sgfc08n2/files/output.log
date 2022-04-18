@@ -1,0 +1,25 @@
+hehe
+tensor([[[0.0000, 0.0000, 0.0000]],
+        [[1.6804, 0.8490, 0.3958]],
+        [[1.2635, 0.6176, 0.3009]],
+        ...,
+        [[0.1922, 0.0595, 0.0643]],
+        [[0.2214, 0.0699, 0.0688]],
+        [[0.2374, 0.0768, 0.0666]]])
+100000
+100000
+GPU available: True, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Traceback (most recent call last):
+  File "train.py", line 338, in <module>
+    main(args)
+  File "train.py", line 298, in main
+    model = model_class()
+TypeError: <lambda>() missing 1 required positional argument: '_'
+Traceback (most recent call last):
+  File "train.py", line 338, in <module>
+    main(args)
+  File "train.py", line 298, in main
+    model = model_class()

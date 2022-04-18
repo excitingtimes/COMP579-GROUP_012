@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "train.py", line 338, in <module>
+    main(args)
+  File "train.py", line 283, in main
+    dm.setup()
+  File "train.py", line 194, in setup
+    self.jellybean_train, self.jellybean_val, self.jellybean_test = random_split(self.jellybean_full, [70_000, 20_000, 10_000])
+  File "/home/mila/s/sonnery.hugo/.conda/envs/env-rl-training/lib/python3.7/site-packages/torch/utils/data/dataset.py", line 384, in random_split
+    raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+ValueError: Sum of input lengths does not equal the length of the input dataset!
+Traceback (most recent call last):
+  File "train.py", line 338, in <module>
+    main(args)
+  File "train.py", line 283, in main
+    dm.setup()
+  File "train.py", line 194, in setup
+    self.jellybean_train, self.jellybean_val, self.jellybean_test = random_split(self.jellybean_full, [70_000, 20_000, 10_000])
+  File "/home/mila/s/sonnery.hugo/.conda/envs/env-rl-training/lib/python3.7/site-packages/torch/utils/data/dataset.py", line 384, in random_split
+    raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+ValueError: Sum of input lengths does not equal the length of the input dataset!
+hehe
+scent
+5
