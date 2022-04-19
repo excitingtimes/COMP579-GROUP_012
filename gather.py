@@ -151,7 +151,7 @@ def gather_dataset(
     i = 0
 
     _dim_scent_ = [num_stack, 3]
-    _dim_vision_ = [num_stack, 15, 15, 3]
+    _dim_vision_ = [num_stack, 16, 16, 3]
     _dim_feature_ = [num_stack, 900]
     dim_scent = [n_samples] + _dim_scent_
     dim_vision = [n_samples] + _dim_vision_
@@ -186,7 +186,7 @@ def gather_dataset(
                 if logged_shapes == False:
                     logged_shapes = scent[:].shape, vision[:].shape, feature[:].shape
                 gathered_scent[i] = torch.Tensor(scent[:])
-                gathered_vision[i] = torch.Tensor(vision[:])
+                gathered_vision[i, :, :15, :15, :] = torch.Tensor(vision[:])
                 gathered_feature[i] = torch.Tensor(feature[:])
                 gathered_episode[i] = delta
                 # For every {max_samples_per_episode} samples collected in our dataloader, we reset the environment to sample a new trajectory
