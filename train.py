@@ -157,41 +157,107 @@ class GrayScaleObservation(ObservationWrapper):
     def get_feature(self, feature):
         return feature
 
-
-
 class JellybeanDataset(Dataset):
-    def __init__(self, dataset_file):
+    def __init__(self, dataset_file, num_stack=1, n_samples=1_000_000):
         self.dataset_file = dataset_file
-        data = torch.load(f=self.dataset_file)
-        self.scent, self.vision, self.feature, self.episode = data["scent"], data["vision"], data["feature"], data["episode"]
+        if self.dataset_file is not None:
+            print(self.dataset_file)
+            data = torch.load(f=self.dataset_file)
+            self.scent, self.vision, self.feature, self.episode = data["scent"], data["vision"], data["feature"], data["episode"]
+        else:
+            self.num_stack = num_stack
+            self.n_samples = n_samples
+            self.delta_stack = 5
+            self.max_samples_per_episode = 1_000
+
+            self.env = gym.make("JBW-COMP579-obj-v1", render=False)
+            self.stacked_env = FrameStack(self.env, num_stack=self.num_stack, lz4_compress=False)
+            _ = self.stacked_env.reset()
+
+            self._dim_scent_ = [self.num_stack, 3]
+            self._dim_vision_ = [self.num_stack, 16, 16, 3]
+            self._dim_feature_ = [self.num_stack, 900]
 
     def __len__(self):
-        return len(self.scent)
+        if self.dataset_file is not None:
+            return len(self.scent)
+        else:
+            return self.n_samples
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        sample = {
-            'scent': self.scent[idx], 
-            'vision': rearrange(self.vision[idx], 'num_stack h w c -> (num_stack c) h w'),
-            'feature': self.feature[idx],
-            'episode': self.episode[idx]
-        }
+        if self.dataset_file is not None:
+            sample = {
+                'scent': self.scent[idx], 
+                'vision': rearrange(self.vision[idx], 'num_stack h w c -> (num_stack c) h w'),
+                'feature': self.feature[idx],
+                'episode': self.episode[idx],
+            }
+        else:
+            n_gathered_samples = 0
+            delta = 0
+            i = 0
+
+            dim_scent = [len(idx)] + self._dim_scent_
+            dim_vision = [len(idx)] + self._dim_vision_
+            dim_feature = [len(idx)] + self._dim_feature_
+            dim_episode = [len(idx), 1]
+
+            gathered_scent = torch.zeros(dim_scent)
+            gathered_vision = torch.zeros(dim_vision)
+            gathered_feature = torch.zeros(dim_feature)
+            gathered_episode = torch.zeros(dim_episode)
+
+            while not done:
+                svfm, reward, done, info  = self.stacked_env.step(self.stacked_env.action_space.sample())
+                scent, vision, feature, moved = svfm
+                delta += 1
+                # Every {delta_stack} frames, we stack the {num_stack} frames together and add them to our dataset
+                if (delta % self.delta_stack) == 0:
+                    i += 1
+                    gathered_scent[i] = torch.Tensor(scent[:])
+                    gathered_vision[i, :, :15, :15, :] = torch.Tensor(vision[:])
+                    gathered_feature[i] = torch.Tensor(feature[:])
+                    gathered_episode[i] = delta
+                    # For every {max_samples_per_episode} samples collected in our dataloader, we reset the environment to sample a new trajectory
+                    if (i % self.max_samples_per_episode) == 0:
+                        _ = self.stacked_env.reset()
+
+                if (i == self.n_samples - 1):
+                    break
+
+            sample = {
+                'scent': gathered_scent, 
+                'vision': rearrange(gathered_vision, 'num_stack h w c -> (num_stack c) h w'),
+                'feature': gathered_feature[idx],
+                'episode': gathered_episode[idx]
+            }
 
         return sample['vision'], sample['episode']
 
 class JellybeanDataModule(pl.LightningDataModule):
-    def __init__(self, dataset_file="/home/mila/s/sonnery.hugo/scratch/datasets/jellyean/dataset-jellybean-num_stack=1.pt", batch_size=64):
+    def __init__(self, dataset_file="/home/mila/s/sonnery.hugo/scratch/datasets/jellyean/dataset-jellybean-num_stack=1.pt", batch_size=64, num_stack=1, n_samples=1_000_000):
         super().__init__()
         self.dataset_file = dataset_file
         self.batch_size = batch_size
+        self.num_stack = num_stack
+        self.n_samples = n_samples
 
     def setup(self, stage=None):
         self.jellybean_full = JellybeanDataset(
             self.dataset_file,
+            num_stack=self.num_stack,
+            n_samples=self.n_samples,
         )
-        self.jellybean_train, self.jellybean_val, self.jellybean_test = random_split(self.jellybean_full, [70_000, 20_000, 10_000])
+        if self.dataset_file is not None:
+            self.jellybean_train, self.jellybean_val, self.jellybean_test = random_split(self.jellybean_full, [7_000, 2_000, 1_000])
+        else:
+            n_train = int(0.7 * self.n_samples)
+            n_val = int(0.2 * self.n_samples)
+            n_test = self.n_samples - n_train - n_val
+            self.jellybean_train, self.jellybean_val, self.jellybean_test = random_split(self.jellybean_full, [n_train, n_val, n_test])
 
     def train_dataloader(self):
         return DataLoader(
@@ -345,8 +411,13 @@ class Autoencoder(pl.LightningModule):
 def main(hparams):
     save_file = f"dataset-jellybean-num_stack={hparams.num_stack}.pt"
     save_directory = "/home/mila/s/sonnery.hugo/scratch/datasets/jellyean/"
-    dataset_file = save_directory + save_file
+    if hparams.live:
+        dataset_file = None
+    else:
+        dataset_file = save_directory + save_file
     exp_name = f"autoencoder-num_stack={str(hparams.num_stack)}-mode={hparams.mode}"
+
+    hparams.num_stack = int(hparams.num_stack)
 
     """
     model_class = lambda num_stack: AE(
@@ -417,6 +488,8 @@ def main(hparams):
     dm = JellybeanDataModule(
         dataset_file=dataset_file,
         batch_size=hparams.batch_size,
+        num_stack=hparams.num_stack,
+        n_samples=hparams.n_samples,
     )
     dm.setup()
 
@@ -425,7 +498,7 @@ def main(hparams):
         callbacks=[
             checkpoint_callback, 
             device_stats_monitor_callback, 
-            early_stop_callback, 
+            # early_stop_callback, 
             progress_bar_callback, 
             print_table_metrics_callback, 
             training_data_monitor_callback, 
@@ -463,12 +536,15 @@ def main(hparams):
     """
 
 
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser = Trainer.add_argparse_args(parser)
     parser.add_argument("--num_stack", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--mode", type=str, default="simple")
+    parser.add_argument("--live", type=bool, default=False)
+    parser.add_argument("--n_samples", type=int, default=1_000_000)
     args = parser.parse_args()
 
     main(args)

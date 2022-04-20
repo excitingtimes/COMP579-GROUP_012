@@ -25,23 +25,31 @@ export PYTHONDONTWRITEBYTECODE=1 # Prevent Python from creating __pycache__
 # Load a pre-created Conda environment
 module load anaconda/3
 module load cuda/11.2
-conda activate env-rl
+conda activate env-rl-training
 
 export NUM_STACK=(
-    1
-    2
-    4
-    8
-    12
-    16
-    24
-    32
+    "1"
+    "2"
+    "4"
+    "8"
+    "12"
+    "16"
+    "24"
+    "32"
 )
 
 python train.py \
     --default_root_dir="/home/mila/s/sonnery.hugo/scratch/checkpoints/jellyean/" \
     --num_stack=${NUM_STACK[${SLURM_ARRAY_TASK_ID}]} \
     --batch_size=64 \
-    --max_epochs=100 \
+    --max_epochs=1_000 \
     --gpus=1 \
     --mode="simple"
+
+python train.py \
+    --default_root_dir="/home/mila/s/sonnery.hugo/scratch/checkpoints/jellyean/" \
+    --num_stack=2 \
+    --batch_size=64 \
+    --max_epochs=1_000 \
+    --gpus=1 \
+    --mode="simple" 

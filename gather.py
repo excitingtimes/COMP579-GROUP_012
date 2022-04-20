@@ -140,7 +140,7 @@ class GrayScaleObservation(ObservationWrapper):
 
 
 def gather_dataset(
-    n_samples=100_000, 
+    n_samples=10_000, 
     num_stack=10, 
     delta_stack=5, 
     max_samples_per_episode=1_000, 
